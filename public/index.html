@@ -3,6 +3,83 @@
 <head>
   <meta charset="UTF-8">
   <title>Task Creator</title>
+  <style>
+    
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 40px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h1, h2 {
+      color: #333
+      text-align: center;
+    }
+    
+    form {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      width: 200px
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      background-color: blue;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: blue;
+    }
+
+    ul {
+      list-style-type: none;
+      padding; 
+    }
+
+    li {
+      background: white;
+      margin-bottom: 15px;
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    li input[type="text"] {
+      flex: 1;
+    }
+
+    li button {
+      background-color; green;
+    }
+
+    li button:last-child {
+      background-color: red;
+    }
+
+    li button:hover {
+      opacity: 0.9;
+    }
+
+  </style>
 </head>
 <body>
   <h1>Создать новую задачу</h1>
@@ -12,7 +89,60 @@
     <button type="submit">Создать</button>
   </form>
 
+  <h2>Список задач</h2>
+  <ul id="taskList"></ul>
+
   <script>
+    async function loadTasks() {
+      const res = await fetch('/tasks');
+      const tasks = await res.json();
+  
+      const list = document.getElementById('taskList');
+      list.innerHTML = '';
+  
+      tasks.forEach(task => {
+        const item = document.createElement('li');
+        
+        // Элементы для отображения и редактирования
+        const titleInput = document.createElement('input');
+        titleInput.value = task.title;
+  
+        const descInput = document.createElement('input');
+        descInput.value = task.description;
+  
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Сохранить';
+        saveBtn.onclick = async () => {
+          await fetch(`/tasks/${task.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: titleInput.value,
+              description: descInput.value
+            })
+          });
+          await loadTasks(); // Обновить список
+        };
+  
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Удалить';
+        deleteBtn.style.marginLeft = '5px';
+        deleteBtn.onclick = async () => {
+          const confirmed = confirm('Удалить задачу?');
+          if (!confirmed) return;
+          await fetch(`/tasks/${task.id}`, { method: 'DELETE' });
+          await loadTasks();
+        };
+  
+        // Отобразить все элементы
+        item.appendChild(titleInput);
+        item.appendChild(descInput);
+        item.appendChild(saveBtn);
+        item.appendChild(deleteBtn);
+        list.appendChild(item);
+      });
+    }
+  
     document.getElementById('taskForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = e.target;
@@ -20,19 +150,19 @@
         title: form.title.value,
         description: form.description.value
       };
-
-      const res = await fetch('/tasks', {
+  
+      await fetch('/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-
-      const result = await res.json();
-      console.log('Результат:', result);
-      alert('Задача успешно создана!');
+  
       form.reset();
+      await loadTasks();
     });
+  
+    loadTasks();
   </script>
+  
 </body>
 </html>
-
